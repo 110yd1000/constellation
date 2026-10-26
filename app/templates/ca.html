@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Security certificate{% endblock %}
+{% block body %}
+<h1>Install the security certificate</h1>
+<div class="card">
+  <p>The apps on this network use their own certificate authority. Install its certificate once so your browser stops showing warnings.</p>
+  <a class="btn" href="/ca.crt">Download certificate</a>
+</div>
+<div class="card">
+  <table>
+    <tr><th>iPhone / iPad</th><td>Open the downloaded file, tap Install in Settings, then go to Settings &gt; General &gt; About &gt; Certificate Trust Settings and switch it on.</td></tr>
+    <tr><th>Android</th><td>Settings &gt; Security &gt; Encryption &amp; credentials &gt; Install a certificate &gt; CA certificate, then pick the file. Some apps ignore user certificates; ask the administrator if one fails.</td></tr>
+    <tr><th>Windows</th><td>Open the file, choose Install Certificate &gt; Local Machine &gt; Trusted Root Certification Authorities.</td></tr>
+    <tr><th>macOS</th><td>Open the file in Keychain Access and set it to Always Trust.</td></tr>
+    <tr><th>Linux</th><td>Copy it to /usr/local/share/ca-certificates/ and run update-ca-certificates. Firefox keeps its own list.</td></tr>
+  </table>
+</div>
+<a href="/">Back</a>
+{% endblock %}

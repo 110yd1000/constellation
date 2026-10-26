@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Media LAN{% endblock %}</title>
+<style>
+:root{color-scheme:light dark;--bg:#f6f7f9;--card:#fff;--ink:#1c2230;--mut:#5b6577;--line:#d9dee7;--acc:#2457d6}
+@media(prefers-color-scheme:dark){:root{--bg:#10141c;--card:#192030;--ink:#e8ecf4;--mut:#9aa6bd;--line:#2c3650;--acc:#7aa2ff}}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+main{max-width:34rem;margin:0 auto;padding:1rem}
+main.wide{max-width:64rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1.25rem;margin:1rem 0}
+h1{font-size:1.4rem;margin:.4rem 0 .8rem}
+h2{font-size:1.1rem;margin:0 0 .75rem}
+label{display:block;margin:.7rem 0 .2rem;font-weight:600}
+input[type=text],input[type=password],input[type=email],input[type=tel]{width:100%;padding:.65rem;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;font:inherit}
+button,.btn{display:inline-block;margin-top:.8rem;padding:.6rem 1.1rem;border:0;border-radius:8px;background:var(--acc);color:#fff;font:inherit;font-weight:600;text-decoration:none;cursor:pointer}
+button.alt,.btn.alt{background:transparent;color:var(--acc);border:1px solid var(--acc)}
+button.bad{background:#b3261e}
+button.sm{margin-top:0;padding:.3rem .7rem;font-size:.9rem}
+.err{color:#b3261e;font-weight:600}
+.ok{color:#1b7f3b;font-weight:600}
+.mut{color:var(--mut)}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{text-align:left;padding:.45rem;border-bottom:1px solid var(--line);vertical-align:top}
+nav{margin:.2rem 0 1rem}
+nav a{margin-right:1rem;color:var(--acc)}
+form.inline{display:inline-block;margin:0 .3rem .3rem 0}
+form.inline input[type=text],form.inline input[type=password]{width:11rem;padding:.3rem}
+a{color:var(--acc)}
+</style>
+</head>
+<body>
+<main class="{% block cls %}{% endblock %}">
+{% block body %}{% endblock %}
+</main>
+</body>
+</html>

@@ -1,0 +1,41 @@
+# /etc/freeradius/3.0/sites-available/media
+server media {
+	listen {
+		type = auth
+		ipaddr = *
+		port = 0
+	}
+	listen {
+		type = acct
+		ipaddr = *
+		port = 0
+	}
+
+	authorize {
+		filter_username
+		preprocess
+		rest
+	}
+
+	authenticate {
+	}
+
+	preacct {
+		preprocess
+		acct_unique
+	}
+
+	accounting {
+		rest
+		attr_filter.accounting_response
+	}
+
+	session {
+	}
+
+	post-auth {
+		Post-Auth-Type REJECT {
+			attr_filter.access_reject
+		}
+	}
+}

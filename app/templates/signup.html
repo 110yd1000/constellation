@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Sign up{% endblock %}
+{% block body %}
+<h1>Request an account</h1>
+<div class="card">
+  {% for e in errors %}<p class="err">{{ e }}</p>{% endfor %}
+  <form method="post" action="/signup">
+    <label for="u">Username</label>
+    <input id="u" type="text" name="username" value="{{ v.get('username','') }}" autocapitalize="none" required>
+    <label for="e">Email address</label>
+    <input id="e" type="email" name="email" value="{{ v.get('email','') }}" required>
+    <label for="ph">Phone number</label>
+    <input id="ph" type="tel" name="phone" value="{{ v.get('phone','') }}" required>
+    <label for="p">Password (at least 10 characters)</label>
+    <input id="p" type="password" name="password" autocomplete="new-password" required>
+    <label for="p2">Repeat the password</label>
+    <input id="p2" type="password" name="password2" autocomplete="new-password" required>
+    <p class="mut">The administrator sees your email and phone number to contact you. Nothing is sent by email.
+    Do not reuse a password from another service.</p>
+    <button type="submit">Send request</button>
+  </form>
+</div>
+<a href="/">Back</a>
+{% endblock %}
