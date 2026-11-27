@@ -1,0 +1,21 @@
+{% extends "admin_base.html" %}
+{% block title %}Audit{% endblock %}
+{% block content %}
+<h1>Audit log</h1>
+<form method="get" action="/admin/audit" class="inline">
+  <input type="text" name="who" value="{{ who }}" placeholder="User or actor">
+  <select name="action"><option value="">All actions</option>
+  {% for a in actions %}<option value="{{ a }}" {{ 'selected' if a == action }}>{{ a }}</option>{% endfor %}</select>
+  <button class="sm alt" type="submit">Filter</button>
+</form>
+<div class="card">
+<table>
+  <tr><th>Time</th><th>Actor</th><th>Action</th><th>Target</th><th>Detail</th></tr>
+  {% for r in rows %}
+  <tr><td>{{ r.ts | ftime }}</td><td>{{ r.actor }}</td><td>{{ r.action }}</td><td>{{ r.target }}</td><td>{{ r.detail }}</td></tr>
+  {% else %}<tr><td colspan="5">Nothing matches.</td></tr>
+  {% endfor %}
+</table>
+<p>Newest 200 entries.</p>
+</div>
+{% endblock %}

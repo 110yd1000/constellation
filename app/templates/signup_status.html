@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Request status{% endblock %}
+{% block body %}
+<div class="card">
+  <h1>Request for {{ r.username }}</h1>
+  {% if r.status == 'pending' %}
+    <p>Your request is waiting for the administrator. Bookmark this page and check back later.</p>
+  {% elif r.status == 'approved' %}
+    <p class="ok">Approved. You can now log in.</p>
+    <a class="btn" href="/">Go to the login page</a>
+  {% else %}
+    <p class="err">The request was not approved.</p>
+    {% if r.reason %}<p class="mut">{{ r.reason }}</p>{% endif %}
+  {% endif %}
+</div>
+{% endblock %}

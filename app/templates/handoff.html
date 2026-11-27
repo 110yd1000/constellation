@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Connecting{% endblock %}
+{% block body %}
+<div class="card">
+  <h1>Connecting you...</h1>
+  <p class="mut">This takes a moment. If nothing happens, press Continue.</p>
+  <form id="hs" method="post" action="{{ action }}">
+    <input type="hidden" name="username" value="{{ username }}">
+    <input type="hidden" name="password" value="{{ token }}">
+    <input type="hidden" name="dst" value="{{ landing }}">
+    <button type="submit">Continue</button>
+  </form>
+</div>
+<script>document.getElementById("hs").submit();</script>
+{% endblock %}

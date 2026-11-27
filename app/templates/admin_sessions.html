@@ -1,0 +1,25 @@
+{% extends "admin_base.html" %}
+{% block title %}Sessions{% endblock %}
+{% block content %}
+<h1>Live sessions</h1>
+<div class="card">
+{% if not rows %}<p class="mut">No active sessions reported by the router in the last 30 minutes.</p>{% endif %}
+<table>
+  <tr><th>User</th><th>Tier</th><th>Address</th><th>Since</th><th>Down / up</th><th></th></tr>
+  {% for r in rows %}
+  <tr>
+    <td>{{ r.username }}</td><td>{{ r.tier }}</td><td>{{ r.ip }}<br><span class="mut">{{ r.mac }}</span></td>
+    <td>{{ r.start_at | ftime }}</td><td>{{ r.bytes_out | fbytes }} / {{ r.bytes_in | fbytes }}</td>
+    <td>
+      <form class="inline" method="post" action="/admin/sessions/kick">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="hidden" name="username" value="{{ r.username }}">
+        <input type="hidden" name="mac" value="{{ r.mac }}">
+        <button class="sm bad" type="submit">Disconnect</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

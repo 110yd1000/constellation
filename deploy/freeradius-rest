@@ -1,0 +1,35 @@
+# /etc/freeradius/3.0/mods-available/rest
+rest {
+	connect_uri = "http://10.20.0.31"
+	connect_timeout = 3.0
+
+	authorize {
+		uri = "${..connect_uri}/internal/radius/authorize"
+		method = 'post'
+		body = 'json'
+		auth = 'basic'
+		username = 'radius'
+		password = '<RADIUS_PORTAL_PASSWORD>'
+		timeout = 4.0
+	}
+
+	accounting {
+		uri = "${..connect_uri}/internal/radius/accounting"
+		method = 'post'
+		body = 'json'
+		auth = 'basic'
+		username = 'radius'
+		password = '<RADIUS_PORTAL_PASSWORD>'
+		timeout = 4.0
+	}
+
+	pool {
+		start = 0
+		min = 0
+		spare = 1
+		uses = 0
+		retry_delay = 30
+		lifetime = 0
+		idle_timeout = 60
+	}
+}

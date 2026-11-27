@@ -1,0 +1,49 @@
+{% extends "admin_base.html" %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<h1>Users</h1>
+{% if error %}<p class="err">{{ error }}</p>{% endif %}
+<div class="card">
+<table>
+  <tr><th>User</th><th>Contact</th><th>Groups</th><th>Actions</th></tr>
+  {% for u in users %}
+  <tr>
+    <td><b>{{ u.id }}</b>{% if held.get(u.id) %}<br><span class="err">Suspended</span>{% endif %}</td>
+    <td>{{ u.email }}{% if contacts.get(u.id) %}<br>{{ contacts[u.id].phone }}{% endif %}</td>
+    <td>{{ u.groups | join(", ") }}</td>
+    <td>
+      {% if held.get(u.id) %}
+      <form class="inline" method="post" action="/admin/users/{{ u.id }}/unsuspend">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <button class="sm" type="submit">Restore access</button>
+      </form>
+      {% else %}
+      <form class="inline" method="post" action="/admin/users/{{ u.id }}/suspend"
+            onsubmit="return confirm('Suspend {{ u.id }}? They are disconnected now and cannot log in.')">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="text" name="reason" placeholder="Reason (optional)" maxlength="200">
+        <button class="sm bad" type="submit">Suspend</button>
+      </form>
+      {% endif %}
+      {% set has_net = 'media_internet' in u.groups %}
+      <form class="inline" method="post" action="/admin/users/{{ u.id }}/internet">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="hidden" name="on" value="{{ '0' if has_net else '1' }}">
+        <button class="sm alt" type="submit">{{ 'Remove internet' if has_net else 'Allow internet' }}</button>
+      </form>
+      <form class="inline" method="post" action="/admin/users/{{ u.id }}/password">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="password" name="new_password" placeholder="New password" autocomplete="new-password">
+        <button class="sm alt" type="submit">Reset</button>
+      </form>
+      <form class="inline" method="post" action="/admin/users/{{ u.id }}/delete"
+            onsubmit="return confirm('Delete {{ u.id }}?')">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <button class="sm bad" type="submit">Delete</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+# Add to /etc/caddy/Caddyfile in LXC 101, below the (members) snippet from phase 3.
+# Gives the admin pages HTTPS. Everything except /admin is refused on this name.
+# (The login, guest and sign-up pages stay on plain HTTP at http://10.20.0.31 because
+#  clients cannot reach the HTTPS sites until they have logged in.)
+
+https://portal.media.lan {
+    import members
+    @admin path /admin /admin/*
+    handle @admin {
+        reverse_proxy 10.20.0.31:80
+    }
+    handle {
+        respond "Not found" 404
+    }
+}

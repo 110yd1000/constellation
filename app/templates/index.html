@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Media LAN</h1>
+{% if router_error %}<p class="err">The router did not accept that login. Please try again.</p>{% endif %}
+{% if mac %}
+<div class="card">
+  <h2>Log in</h2>
+  {% if error %}<p class="err">{{ error }}</p>{% endif %}
+  <form method="post" action="/login">
+    <input type="hidden" name="mac" value="{{ mac }}">
+    <label for="u">Username</label>
+    <input id="u" type="text" name="username" autocomplete="username" autocapitalize="none" required>
+    <label for="p">Password</label>
+    <input id="p" type="password" name="password" autocomplete="current-password" required>
+    <button type="submit">Log in</button>
+  </form>
+</div>
+<div class="card">
+  <h2>Just looking?</h2>
+  <p class="mut">A guest session gives you the public library for 2 hours, with no internet.</p>
+  <form method="post" action="/guest">
+    <input type="hidden" name="mac" value="{{ mac }}">
+    <button class="alt" type="submit">Continue as guest</button>
+  </form>
+</div>
+{% else %}
+<div class="card">
+  <p>To log in, open a plain <b>http://</b> website (for example <b>neverssl.com</b>) and the router will bring you back here.</p>
+</div>
+{% endif %}
+<div class="card">
+  <h2>New here?</h2>
+  <p class="mut">Request an account. An administrator approves it, usually within a day.</p>
+  <a class="btn alt" href="/signup">Sign up</a>
+  <a class="btn alt" href="/ca">Install the security certificate</a>
+</div>
+{% endblock %}

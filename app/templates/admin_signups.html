@@ -1,0 +1,33 @@
+{% extends "admin_base.html" %}
+{% block title %}Sign-ups{% endblock %}
+{% block content %}
+<h1>Pending sign-ups</h1>
+{% if not pending %}<p class="card mut">Nothing waiting.</p>{% endif %}
+{% for r in pending %}
+<div class="card">
+  <p><b>{{ r.username }}</b> &middot; {{ r.email }} &middot; {{ r.phone }}<br>
+  <span class="mut">Requested {{ r.created_at | ftime }}</span></p>
+  {% if r.error %}<p class="err">Last attempt failed: {{ r.error }}</p>{% endif %}
+  <form class="inline" method="post" action="/admin/signups/{{ r.id }}/approve">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label style="display:inline"><input type="checkbox" name="internet" value="1"> Allow internet</label>
+    <button class="sm" type="submit">Approve</button>
+  </form>
+  <form class="inline" method="post" action="/admin/signups/{{ r.id }}/reject">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="text" name="reason" placeholder="Reason (shown to the user)">
+    <button class="sm bad" type="submit">Reject</button>
+  </form>
+</div>
+{% endfor %}
+<h1>Recently decided</h1>
+<div class="card">
+<table>
+  <tr><th>User</th><th>Result</th><th>By</th><th>When</th></tr>
+  {% for r in done %}
+  <tr><td>{{ r.username }}</td><td>{{ r.status }}{% if r.internet and r.status == 'approved' %} (internet){% endif %}</td>
+      <td>{{ r.decided_by }}</td><td>{{ r.decided_at | ftime }}</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}
