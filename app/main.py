@@ -64,7 +64,7 @@ async def lifespan(app):
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
 app.add_middleware(SessionMiddleware, secret_key=config.S.session_secret or "unset",
-                   same_site="lax", https_only=False, max_age=3600, session_cookie="portal_session")
+                   same_site="lax", https_only=config.S.cookie_secure, max_age=3600, session_cookie="portal_session")
 
 
 # ---- helpers ---------------------------------------------------------------------------
@@ -382,6 +382,9 @@ def radius_accounting(body: dict = Body(...), _: None = Depends(radius_guard)):
 # ---- admin pages -----------------------------------------------------------------------
 
 def admin_ip_ok(request: Request) -> bool:
+    peer = request.client.host if request.client else ""
+    if config.S.admin_via_proxy and peer not in config.S.trusted_proxies:
+        return False  # plain HTTP straight to the portal: admin pages only through Caddy (HTTPS)
     try:
         addr = ipaddress.ip_address(ip_of(request))
     except ValueError:
@@ -488,6 +491,19 @@ def admin_users(request: Request):
                   contacts=contacts, held=held, error=error, msg=request.query_params.get("msg", ""))
 
 
+def _disconnect(admin: str, name: str) -> str:
+    """End the user's live Wi-Fi sessions so an access change applies now, not at next login."""
+    try:
+        n = routeros.kick(name)
+    except routeros.RouterError as e:
+        return f" Live sessions were not disconnected ({e}); the change applies at their next login."
+    if n:
+        with db.conn() as c:
+            db.audit(c, admin, "kick", name, "all devices")
+        return f" Disconnected {n} live session(s)."
+    return ""
+
+
 def _user_action(request: Request, name: str, csrf: str, fn):
     user, resp = admin_guard(request, csrf)
     if resp:
@@ -507,6 +523,7 @@ def admin_internet(request: Request, name: str, csrf: str = Form(""), on: str = 
         (directory.add_to_group if on == "1" else directory.remove_from_group)(n, "media_internet")
         with db.conn() as c:
             db.audit(c, admin, "internet-on" if on == "1" else "internet-off", n)
+        return ("Internet allowed." if on == "1" else "Internet removed.") + _disconnect(admin, n)
     return _user_action(request, name, csrf, run)
 
 
@@ -593,7 +610,8 @@ def admin_delete(request: Request, name: str, csrf: str = Form("")):
             c.execute("DELETE FROM signups WHERE username=?", (n,))
             c.execute("DELETE FROM suspensions WHERE username=?", (n,))
             db.audit(c, admin, "user-deleted", n)
-        return "User deleted. Remove the Navidrome account by hand until phase 5 adds sync."
+        return ("User deleted." + _disconnect(admin, n)
+                + " Remove the Navidrome account by hand until phase 5 adds sync.")
     return _user_action(request, name, csrf, run)
 
 

@@ -37,6 +37,9 @@ class Settings:
     ca_file: str = "/etc/portal/ca.crt"
     admin_nets: list = field(default_factory=list)
     trusted_proxies: list = field(default_factory=lambda: ["10.20.0.11"])
+    # admin pages only through Caddy (HTTPS); the session cookie is HTTPS-only
+    admin_via_proxy: bool = True
+    cookie_secure: bool = True
     router_url: str = ""
     router_user: str = "portal"
     router_pass: str = ""
@@ -78,6 +81,8 @@ def load() -> Settings:
         ca_file=_env("CA_FILE", "/etc/portal/ca.crt"),
         admin_nets=nets,
         trusted_proxies=[p.strip() for p in _env("TRUSTED_PROXIES", "10.20.0.11").split(",") if p.strip()],
+        admin_via_proxy=_env("ADMIN_VIA_PROXY", "1") != "0",
+        cookie_secure=_env("COOKIE_SECURE", "1") != "0",
         router_url=_env("ROUTER_URL"),
         router_user=_env("ROUTER_USER", "portal"),
         router_pass=_env("ROUTER_PASS"),
