@@ -37,7 +37,16 @@ Then, in this order:
 | `deploy/Caddyfile-portal.snippet` | HTTPS for the admin pages in Caddy |
 | `deploy/mikrotik-hotspot.rsc`, `hotspot-login.html` | Router Hotspot settings (PAP login, user profiles, walled garden) and the redirect page |
 | `deploy/lldap-portal-account.md` | Rights the portal account needs in LLDAP |
-| `tests/` | 21 tests, no network needed |
+| `tests/` | 28 tests, no network needed |
+
+## Admin access
+
+Admin pages open only at **https://portal.media.lan/admin** (through Caddy). Requests sent
+straight to `http://10.20.0.31/admin` are refused, and the admin session cookie is sent
+only over HTTPS (`ADMIN_VIA_PROXY=1`, `COOKIE_SECURE=1` in `portal.env`).
+
+Deleting a user or changing their internet access disconnects their live Wi-Fi sessions
+once `ROUTER_URL` and `ROUTER_PASS` are set; until then the change applies at their next login.
 
 ## Run the tests
 

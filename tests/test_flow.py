@@ -12,8 +12,11 @@ os.environ.update({
     "RADIUS_PASS": "radiuspw",
     "ADMIN_NETS": "10.20.1.2/32",
     "CA_FILE": "/nonexistent",
+    "ADMIN_VIA_PROXY": "0",  # TestClient talks to the app directly, not through Caddy
+    "COOKIE_SECURE": "0",    # and over plain http://testserver
 })
 
+import httpx
 import pytest
 from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
@@ -396,6 +399,69 @@ def test_suspend_restore_and_audit(client, monkeypatch):
     assert "root1" not in client.get("/admin/audit?action=login").text.split("<table>")[1]
 
 
+def test_admin_pages_only_through_caddy(client, monkeypatch):
+    """With ADMIN_VIA_PROXY on, plain HTTP straight to the portal never reaches the admin pages."""
+    monkeypatch.setattr(config.S, "admin_via_proxy", True)
+    client.test_ip = "10.20.1.2"  # an allowed admin device...
+    assert client.get("/admin/login").status_code == 403  # ...but not coming through Caddy
+    monkeypatch.setattr(config.S, "trusted_proxies", ["testclient"])  # TestClient's peer name
+    assert client.get("/admin/login").status_code == 200
+
+
+def test_session_cookie_is_https_only():
+    assert config.S.__class__().cookie_secure is True
+    assert config.S.__class__().admin_via_proxy is True
+
+
+def test_lockout_is_per_device(client, monkeypatch):
+    """Wrong guesses from one device do not lock the account out on another device."""
+    st = fake_dir(monkeypatch, {"a": "passwordaaa"})
+    st["groups"]["a"] = ["media_members"]
+    client.test_ip = "10.20.1.66"
+    for _ in range(5):
+        client.post("/login", data={"username": "a", "password": "nope", "mac": MAC})
+    assert client.post("/login", data={"username": "a", "password": "passwordaaa",
+                                       "mac": MAC}).status_code == 429
+    client.test_ip = "10.20.1.50"
+    assert client.post("/login", data={"username": "a", "password": "passwordaaa",
+                                       "mac": "AA:BB:CC:DD:EE:02"}).status_code == 200
+
+
+def test_wifi_guesses_do_not_lock_admin_login(client, monkeypatch):
+    st = fake_dir(monkeypatch, {"root1": "adminpassword1"})
+    st["groups"]["root1"] = ["media_admin"]
+    for _ in range(6):
+        client.post("/login", data={"username": "root1", "password": "nope", "mac": MAC})
+    client.test_ip = "10.20.1.2"
+    r = client.post("/admin/login", data={"username": "root1", "password": "adminpassword1"},
+                    follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/admin/signups"
+
+
+def test_access_changes_disconnect_live_sessions(client, monkeypatch):
+    st = fake_dir(monkeypatch, {"root1": "adminpassword1", "bob": "bobpassword12"})
+    st["groups"].update({"root1": ["media_admin"], "bob": ["media_members", "media_internet"]})
+    kicked = []
+    monkeypatch.setattr(routeros, "kick", lambda u, m="": kicked.append(u) or 2)
+    client.test_ip = "10.20.1.2"
+    client.post("/admin/login", data={"username": "root1", "password": "adminpassword1"})
+    csrf = re.search(r'name="csrf" value="([^"]+)"', client.get("/admin/users").text).group(1)
+    r = client.post("/admin/users/bob/internet", data={"csrf": csrf, "on": "0"}, follow_redirects=False)
+    assert kicked == ["bob"] and "Disconnected%202" in r.headers["location"]
+    r = client.post("/admin/users/bob/delete", data={"csrf": csrf}, follow_redirects=False)
+    assert kicked == ["bob", "bob"] and "Disconnected%202" in r.headers["location"]
+
+
+def test_access_change_without_router_says_so(client, monkeypatch):
+    st = fake_dir(monkeypatch, {"root1": "adminpassword1", "bob": "bobpassword12"})
+    st["groups"].update({"root1": ["media_admin"], "bob": ["media_members"]})
+    client.test_ip = "10.20.1.2"
+    client.post("/admin/login", data={"username": "root1", "password": "adminpassword1"})
+    csrf = re.search(r'name="csrf" value="([^"]+)"', client.get("/admin/users").text).group(1)
+    r = client.post("/admin/users/bob/delete", data={"csrf": csrf}, follow_redirects=False)
+    assert "bob" not in st["users"] and "next%20login" in r.headers["location"]
+
+
 def test_suspend_router_failure_still_suspends(client, monkeypatch):
     st = fake_dir(monkeypatch, {"root1": "adminpassword1", "bob": "bobpassword12"})
     st["groups"].update({"root1": ["media_admin"], "bob": ["media_members"]})
@@ -404,3 +470,29 @@ def test_suspend_router_failure_still_suspends(client, monkeypatch):
     csrf = re.search(r'name="csrf" value="([^"]+)"', client.get("/admin/users").text).group(1)
     r = client.post("/admin/users/bob/suspend", data={"csrf": csrf}, follow_redirects=False)
     assert "not%20cut" in r.headers["location"] and st["groups"]["bob"] == []
+
+
+def test_kick_without_mac_removes_every_device(monkeypatch):
+    calls = []
+
+    class FakeClient:
+        def __init__(self, **kw): pass
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def get(self, path):
+            return httpx.Response(200, json=[
+                {".id": "*1", "user": "bob", "mac-address": "AA:BB:CC:DD:EE:01"},
+                {".id": "*2", "user": "bob", "mac-address": "AA:BB:CC:DD:EE:02"},
+                {".id": "*3", "user": "amy", "mac-address": "AA:BB:CC:DD:EE:03"}],
+                request=httpx.Request("GET", "https://r" + path))
+        def delete(self, path):
+            calls.append(path)
+            return httpx.Response(204, request=httpx.Request("DELETE", "https://r" + path))
+
+    monkeypatch.setattr(config.S, "router_url", "https://10.20.0.1")
+    monkeypatch.setattr(config.S, "router_pass", "x")
+    monkeypatch.setattr(routeros.httpx, "Client", FakeClient)
+    assert routeros.kick("bob") == 2 and calls == ["/rest/ip/hotspot/active/*1",
+                                                       "/rest/ip/hotspot/active/*2"]
+    calls.clear()
+    assert routeros.kick("bob", "aabbccddee02") == 1 and calls == ["/rest/ip/hotspot/active/*2"]
